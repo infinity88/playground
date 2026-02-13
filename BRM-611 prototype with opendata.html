@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Halte ↔ Lijn | Live (De Lijn Open Data)</title>
+<style>
+  :root{
+    --bg:#0b0c0f;--panel:#12141a;--muted:#9aa3b2;--text:#e6e9ef;
+    --brand:#4f8cff;--accent:#27c3a8;--ring:0 0 0 3px rgba(79,140,255,.25);
+    --card:#161922;--border:#1f2330;--chip:#20283a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:
+      radial-gradient(1200px 1200px at 90% -10%, rgba(79,140,255,.08), transparent 60%),
+      radial-gradient(800px 800px at -10% 20%, rgba(39,195,168,.08), transparent 50%),
+      var(--bg); color:var(--text);
+      font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif}
+  .wrap{max-width:940px;margin:48px auto;padding:24px}
+  header{display:flex;gap:16px;align-items:center;margin-bottom:18px}
+  .logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--brand),#76a8ff);
+        color:#fff;display:grid;place-items:center;font-weight:700;box-shadow:0 10px 30px rgba(79,140,255,.35)}
+  h1{margin:0;font-size:22px}
+  .sub{color:var(--muted);font-size:13px}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px;
+         box-shadow:0 10px 30px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.02)}
+  .grid{display:grid;grid-template-columns:1fr;gap:16px}
+  @media (min-width:760px){.grid{grid-template-columns:1fr 1fr}}
+  .field{display:flex;flex-direction:column;gap:8px}
+  .label{font-weight:600}
+  .combobox{position:relative}
+  .input{width:100%;background:var(--card);color:var(--text);border:1px solid var(--border);
+         border-radius:12px;padding:12px 40px 12px 40px;outline:none}
+  .input::placeholder{color:#77809a}
+  .input:focus{border-color:#2b3650;box-shadow:var(--ring)}
+  .icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;opacity:.7}
+  .clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:8px;
+         border:0;background:transparent;color:#aab3c7;cursor:pointer}
+  .clear:hover{background:#232a3a;color:#e6e9ef}
+  .list{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:20;background:var(--card);
+        border:1px solid var(--border);border-radius:12px;max-height:280px;overflow:auto;
+        box-shadow:0 20px 40px rgba(0,0,0,.35);display:none}
+  .item{padding:10px 12px;display:flex;gap:10px;align-items:center;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.03)}
+  .item:last-child{border-bottom:none}
+  .item:hover,.item[aria-selected="true"]{background:#1a2030}
+  .num{min-width:64px;color:#b8c0d4;font-variant-numeric:tabular-nums}
+  .name{font-weight:600}
+  .place{color:var(--muted)}
+  .hint{font-size:12px;color:#93a0b8}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .chip{background:var(--chip);color:#cfeaff;border:1px solid #2a3550;padding:4px 8px;border-radius:999px;font-size:12px}
+  .footer{margin-top:18px;color:var(--muted);font-size:12px}
+  .count{color:#cfeaff}
+  .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+       font-size:12px;background:#1b2130;border:1px solid #293145;border-radius:6px;padding:2px 6px;color:#cde}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">DL</div>
+      <div>
+        <h1>Halte ↔ Lijn (Live)</h1>
+        <div class="sub">Zoek met Open Data V1 Search API en link via Open Data V1 Core API (De Lijn)</div>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="grid">
+        <!-- HALTE -->
+        <div class="field" id="halteField">
+          <label class="label" for="halteInput">Halte</label>
+          <div class="combobox" data-type="stop">
+            <svg class="icon" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.3-4.3M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14Z" stroke="#9aa3b2" stroke-width="2" stroke-linecap="round"/></svg>
+            <input id="halteInput" class="input" type="text" role="combobox" aria-expanded="false"
+                   aria-autocomplete="list" aria-controls="halteList"
+                   placeholder="Zoek op nummer, naam of plaats… (bv. 204915, Sint‑Pieters, Gent)" />
+            <button class="clear" aria-label="Reset halte" title="Reset halte" data-clear="stop">✕</button>
+            <ul id="halteList" class="list" role="listbox" aria-label="Haltes"></ul>
+          </div>
+          <div class="hint">Tip: <span class="kbd">↵</span> selecteert, <span class="kbd">Esc</span> sluit.</div>
+          <div class="chips" id="halteChips"></div>
+        </div>
+
+        <!-- LIJN -->
+        <div class="field" id="lijnField">
+          <label class="label" for="lijnInput">Lijn</label>
+          <div class="combobox" data-type="route">
+            <svg class="icon" viewBox="0 0 24 24" fill="none"><path d="M4 5h9a4 4 0 1 1 0 8H9m5 0h6" stroke="#9aa3b2" stroke-width="2" stroke-linecap="round"/></svg>
+            <input id="lijnInput" class="input" type="text" role="combobox" aria-expanded="false"
+                   aria-autocomplete="list" aria-controls="lijnList"
+                   placeholder="Zoek op nummer, naam of plaats… (bv. 77, Deinze, Gent)" />
+            <button class="clear" aria-label="Reset lijn" title="Reset lijn" data-clear="route">✕</button>
+            <ul id="lijnList" class="list" role="listbox" aria-label="Lijnen"></ul>
+          </div>
+          <div class="hint">Selecteer een halte of lijn om de andere lijst te filteren.</div>
+          <div class="chips" id="lijnChips"></div>
+        </div>
+      </div>
+
+      <div class="footer" id="status">Gereed.</div>
+    </section>
+  </div>
+
+<script>
+/* =============================================================================
+   CONFIG — set your API key & confirm endpoint paths from the De Lijn portal.
+   Subscribe and get your key here: https://data.delijn.be (Products → Subscribe)
+   Docs/API list here: https://portal.delijn.be/apis
+============================================================================= */
+// REQUIRED: put your key here (Open Data Free / Search / Core product)
+const API_KEY = "078418333f7944e9b29c4aeb9ca1518e"; // header: Ocp-Apim-Subscription-Key
+
+// Base host (API Management front door). If your subscription uses another host,
+// change DELIJN_BASE accordingly (copy from portal “Try it”).
+const DELIJN_BASE = "https://data.delijn.be";
+
+// Endpoint paths — verify in your portal. Some tenants expose /v1/, others /1.0/.
+const API = {
+  // Search API (find candidates)
+  searchStops: "/opendata/Search/1.0/Stops",   // parameters: searchTerm, startIndex, maxAantalHits
+  searchLines: "/opendata/Search/1.0/Lines",   // parameters: searchTerm, startIndex, maxAantalHits
+
+  // Core API (linkage)
+  // If your swagger shows different casing or version, adjust here:
+  linesByStop: (stopId) => `/opendata/Core/1.0/Stops/${encodeURIComponent(stopId)}/Lines`,
+  stopsByLine: (lineId) => `/opendata/Core/1.0/Lines/${encodeURIComponent(lineId)}/Stops`,
+};
+
+// -----------------------------------------------------------------------------
+// Utilities
+// -----------------------------------------------------------------------------
+function setStatus(html){ document.getElementById('status').innerHTML = html; }
+function normalize(x){ return (x||'').toString().toLowerCase().normalize('NFKD').replace(/\p{Diacritic}/gu,''); }
+function htmlEscape(s){ return (s||'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+async function dlFetch(path, params){
+  const url = new URL(path, DELIJN_BASE);
+  if (params){
+    Object.entries(params).forEach(([k,v]) => (v!==undefined && v!==null && v!=='') && url.searchParams.set(k, v));
+  }
+  const res = await fetch(url.toString(), { headers:{ 'Ocp-Apim-Subscription-Key': API_KEY } });
+  if (!res.ok){
+    const text = await res.text().catch(()=>res.statusText);
+    throw new Error(`HTTP ${res.status} — ${text}`);
+  }
+  const ct = res.headers.get('content-type')||'';
+  return ct.includes('application/json') ? res.json() : res.text();
+}
+
+// -----------------------------------------------------------------------------
+// Mapping helpers: normalize API payloads to local shapes used by the UI
+// (Adjust field names if your swagger shows different ones.)
+// -----------------------------------------------------------------------------
+function mapStop(obj){
+  return {
+    id: obj.stopId ?? obj.id ?? obj.code ?? obj.entityId ?? obj.entityID ?? obj.entityCode,
+    code: obj.code ?? obj.stopCode ?? obj.id ?? obj.stopId ?? '',
+    name: obj.description ?? obj.name ?? obj.omschrijving ?? '',
+    place: obj.municipality ?? obj.city ?? obj.gemeente ?? obj.place ?? '',
+  };
+}
+
+function mapLine(obj){
+  return {
+    id: obj.id ?? obj.lineId ?? obj.number ?? obj.code,
+    number: obj.number ?? obj.shortName ?? obj.code ?? obj.id,
+    name: obj.description ?? obj.longName ?? obj.bestemming ?? obj.destination ?? '',
+    place: obj.region ?? obj.vervoerregio ?? obj.direction ?? obj.bestemming ?? '',
+  };
+}
+
+// -----------------------------------------------------------------------------
+// Caches to reduce API calls
+// -----------------------------------------------------------------------------
+const cache = {
+  stopSearch: new Map(),  // term -> [stops]
+  lineSearch: new Map(),  // term -> [lines]
+  linesByStop: new Map(), // stopId -> [lines]
+  stopsByLine: new Map(), // lineId -> [stops]
+};
+
+async function searchStops(term, startIndex=0, maxAantalHits=20){
+  const key = `${term}|${startIndex}|${maxAantalHits}`;
+  if (cache.stopSearch.has(key)) return cache.stopSearch.get(key);
+  const data = await dlFetch(API.searchStops, { searchTerm: term, startIndex, maxAantalHits });
+  const list = (data?.stops || data?.items || data || []).map(mapStop).filter(s=>s.id && s.name);
+  cache.stopSearch.set(key, list);
+  return list;
+}
+
+async function searchLines(term, startIndex=0, maxAantalHits=20){
+  const key = `${term}|${startIndex}|${maxAantalHits}`;
+  if (cache.lineSearch.has(key)) return cache.lineSearch.get(key);
+  const data = await dlFetch(API.searchLines, { searchTerm: term, startIndex, maxAantalHits });
+  const list = (data?.lines || data?.items || data || []).map(mapLine).filter(l=>l.id && l.number);
+  cache.lineSearch.set(key, list);
+  return list;
+}
+
+async function fetchLinesByStop(stopId){
+  if (cache.linesByStop.has(stopId)) return cache.linesByStop.get(stopId);
+  const data = await dlFetch(API.linesByStop(stopId));
+  const list = (data?.lines || data?.items || data || []).map(mapLine).filter(l=>l.id);
+  cache.linesByStop.set(stopId, list);
+  return list;
+}
+
+async function fetchStopsByLine(lineId){
+  if (cache.stopsByLine.has(lineId)) return cache.stopsByLine.get(lineId);
+  const data = await dlFetch(API.stopsByLine(lineId));
+  const list = (data?.stops || data?.items || data || []).map(mapStop).filter(s=>s.id);
+  cache.stopsByLine.set(lineId, list);
+  return list;
+}
+
+// -----------------------------------------------------------------------------
+// UI rendering and combobox logic (kept lightweight & accessible)
+// -----------------------------------------------------------------------------
+const selected = { stop: null, route: null };
+const current  = { filteredStops: [], filteredRoutes: [] };
+
+function renderList(listEl, items, type){
+  listEl.innerHTML = '';
+  for (const obj of items){
+    const li = document.createElement('li');
+    li.className = 'item';
+    li.setAttribute('role','option');
+    li.setAttribute('data-id', type==='stop' ? obj.id : obj.id);
+    li.innerHTML = `
+      <div class="num">${htmlEscape(type==='stop' ? (obj.code||'') : (obj.number||''))}</div>
+      <div>
+        <div class="name">${htmlEscape(obj.name||'')}</div>
+        <div class="place">${htmlEscape(obj.place||'')}</div>
+      </div>`;
+    listEl.appendChild(li);
+  }
+  listEl.style.display = items.length ? 'block' : 'none';
+}
+
+function updateChips(){
+  const halteChips = document.getElementById('halteChips');
+  const lijnChips  = document.getElementById('lijnChips');
+  halteChips.innerHTML = selected.stop ? `<span class="chip">Halte: ${htmlEscape(selected.stop.name)} (#${htmlEscape(selected.stop.code||'')})</span>` : '';
+  lijnChips.innerHTML  = selected.route ? `<span class="chip">Lijn: ${htmlEscape(selected.route.number)} — ${htmlEscape(selected.route.name||'')}</span>` : '';
+  document.getElementById('status').innerHTML =
+    `Beschikbaar: <span class="count">${current.filteredStops.length}</span> haltes • <span class="count">${current.filteredRoutes.length}</span> lijnen`;
+}
+
+function clearSelection(type){
+  if (type==='stop'){ selected.stop = null; document.getElementById('halteInput').value=''; }
+  if (type==='route'){ selected.route = null; document.getElementById('lijnInput').value=''; }
+  filterAll();
+}
+
+async function filterAll(){
+  const stopQuery  = document.getElementById('halteInput').value.trim();
+  const routeQuery = document.getElementById('lijnInput').value.trim();
+
+  try{
+    setStatus('Zoeken…');
+    // Run searches (use current text; if empty, return empty arrays)
+    const [stopCandidates, routeCandidates] = await Promise.all([
+      stopQuery  ? searchStops(stopQuery)  : [],
+      routeQuery ? searchLines(routeQuery) : [],
+    ]);
+
+    let filteredStops  = stopCandidates;
+    let filteredRoutes = routeCandidates;
+
+    // Cross-limit using Core API linkage
+    if (selected.stop){
+      const linkedRoutes = await fetchLinesByStop(selected.stop.id); // lines that pass selected stop
+      const allowed = new Set(linkedRoutes.map(l=>l.id));
+      filteredRoutes = (routeQuery ? routeCandidates : linkedRoutes).filter(l => allowed.has(l.id));
+    }
+    if (selected.route){
+      const linkedStops = await fetchStopsByLine(selected.route.id); // stops on selected line
+      const allowed = new Set(linkedStops.map(s=>s.id));
+      filteredStops = (stopQuery ? stopCandidates : linkedStops).filter(s => allowed.has(s.id));
+    }
+
+    current.filteredStops  = filteredStops;
+    current.filteredRoutes = filteredRoutes;
+
+    renderList(document.getElementById('halteList'), filteredStops, 'stop');
+    renderList(document.getElementById('lijnList'),  filteredRoutes, 'route');
+
+    document.getElementById('halteInput').setAttribute('aria-expanded', filteredStops.length ? 'true':'false');
+    document.getElementById('lijnInput').setAttribute('aria-expanded',  filteredRoutes.length ? 'true':'false');
+    updateChips();
+    setStatus('Gereed.');
+  }catch(err){
+    console.error(err);
+    setStatus(`Fout bij laden (API): ${htmlEscape(err.message)}`);
+  }
+}
+
+async function selectById(type, id){
+  if (type==='stop'){
+    // We may not have the full stop object if selection comes from a line-linkage list,
+    // so search for it in the current list or fallback to a quick detail lookup (if needed).
+    const s = current.filteredStops.find(x => x.id===id) || { id, name: `Stop ${id}`, code: id, place: '' };
+    selected.stop = s;
+    document.getElementById('halteInput').value = `${s.code||s.id} — ${s.name||''}`;
+  }else{
+    const r = current.filteredRoutes.find(x => x.id===id) || { id, number: id, name: '', place: '' };
+    selected.route = r;
+    document.getElementById('lijnInput').value = `${r.number||r.id} — ${r.name||''}`;
+  }
+  // Refine the other list using Core linkage
+  await filterAll();
+  // Close lists
+  document.getElementById(type==='stop' ? 'halteList' : 'lijnList').style.display = 'none';
+}
+
+function attachCombo(inputId, listId, type){
+  const input = document.getElementById(inputId);
+  const list  = document.getElementById(listId);
+  const wrap  = input.closest('.combobox');
+
+  input.addEventListener('input', ()=> filterAll());
+  input.addEventListener('focus', ()=> filterAll());
+
+  list.addEventListener('click', (e)=>{
+    const li = e.target.closest('.item'); if (!li) return;
+    selectById(type, li.getAttribute('data-id'));
+  });
+
+  input.addEventListener('keydown', (e)=>{
+    const items = [...list.querySelectorAll('.item')];
+    if (e.key==='ArrowDown' || e.key==='ArrowUp'){
+      e.preventDefault();
+      let idx = items.findIndex(it => it.getAttribute('aria-selected')==='true');
+      if (e.key==='ArrowDown') idx = Math.min(idx+1, items.length-1);
+      else idx = Math.max(idx-1, 0);
+      items.forEach(it => it.setAttribute('aria-selected','false'));
+      if (items[idx]) items[idx].setAttribute('aria-selected','true');
+    }
+    if (e.key==='Enter'){
+      const sel = list.querySelector('.item[aria-selected="true"]') || list.querySelector('.item');
+      if (sel) selectById(type, sel.getAttribute('data-id'));
+    }
+    if (e.key==='Escape'){
+      list.style.display = 'none';
+      input.setAttribute('aria-expanded','false');
+      input.blur();
+    }
+  });
+
+  wrap.querySelector('.clear').addEventListener('click', ()=> clearSelection(type));
+  document.addEventListener('click', (e)=>{
+    if (!wrap.contains(e.target)){
+      list.style.display = 'none';
+      input.setAttribute('aria-expanded','false');
+    }
+  });
+}
+
+// Init
+attachCombo('halteInput','halteList','stop');
+attachCombo('lijnInput','lijnList','route');
+setStatus('Gereed. Vul een zoekterm in om live te zoeken.');
+</script>
+
+<section class="wrap" aria-labelledby="sources">
+  <h2 id="sources" style="font-size:18px;margin:24px 0 6px;">Sources & implementatie-notes</h2>
+  <ol style="color:#9aa3b2;line-height:1.6;margin-top:0">
+    <li>Open Data portal met product-abonnementen en API key: <em>Open Data Free</em>, GTFS Static/Realtime, Search & Core producten. (API key via <code>Ocp-Apim-Subscription-Key</code>). [1](https://data.delijn.be/)[2](https://data.delijn.be/products)</li>
+    <li>API-lijst/Swagger (“Open Data V1 Search API” en “Open Data V1 Core API”) om de exacte paden en responsevelden te kopiëren; padversies kunnen variëren per omgeving. [3](https://portal.delijn.be/apis)</li>
+    <li>Ook de onafhankelijke Power Platform connector toont dat Search acties een API key vereisen en documenteert parameters (<code>searchTerm</code>, <code>startIndex</code>, <code>maxAantalHits</code>). [4](https://learn.microsoft.com/en-us/connectors/delijnip/)</li>
+  </ol>
+  <p style="color:#9aa3b2;margin-top:8px">
+    Let op: de exacte veldnamen in de Search/Core responses kunnen per versie licht verschillen.
+    Pas zo nodig de <code>mapStop()</code>/<code>mapLine()</code> helpers en de <code>API</code>-paden aan aan jouw Swagger.
+  </p>
+</section>
+</body>
+</html>
